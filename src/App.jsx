@@ -114,7 +114,7 @@ function CandyModel({ glb,activeCandy }) {
       ref={group}
       object={scene}
       scale={0.15}
-      position={[0, -1.4, 0]}
+      position={[0, 0.8, 0]}
     />
   )
 }
