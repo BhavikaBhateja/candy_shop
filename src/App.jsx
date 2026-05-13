@@ -174,12 +174,12 @@ function CandyModel({ glb, activeCandy }) {
 
   // ✅ Center wraps, position sirf Y offset
   return (
-    <Center>
+     <Center bottom position={[0, 2.2, 0]}>
       <primitive
         ref={group}
         object={scene}
         scale={0.15}
-        position={[0, -0.5, 0]}
+        
       />
     </Center>
   )
