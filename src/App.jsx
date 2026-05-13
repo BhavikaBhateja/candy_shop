@@ -6,6 +6,7 @@ import { useGLTF, OrbitControls, Environment, useAnimations } from '@react-three
 import { Suspense, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { Float, ContactShadows,Center } from '@react-three/drei'
+import { useMemo } from 'react' 
 // ── candy options ─────────────────────────────────────────────────
 const CANDIES = [
   {
@@ -118,47 +119,128 @@ const SIZES = [
 //     />
 //   )
 // }
+// function CandyModel({ glb, activeCandy }) {
+//   const group = useRef()
+//   const { scene, animations } = useGLTF(glb)
+//   const { actions, names } = useAnimations(animations, group)
+
+//   // ✅ SIRF materials — bounding box gone
+//   useEffect(() => {
+//     scene.traverse((child) => {
+//       if (!child.isMesh) return
+
+//       const n = child.name.toLowerCase()
+
+//       if (!child.userData.originalMaterial) {
+//         child.userData.originalMaterial = child.material.clone()
+//       }
+
+//       if (n.includes('jar') || n.includes('glass') || n.includes('container')) {
+//         child.material = new THREE.MeshPhysicalMaterial({
+//           color: '#e8eff5',
+//           roughness: 0.08,
+//           transparent: true,
+//           opacity: 0.22,
+//           side: THREE.DoubleSide,
+//         })
+//         return
+//       }
+
+//       if (activeCandy?.id === 'toffees') {
+//         child.material = new THREE.MeshStandardMaterial({
+//           color: '#b86b3d',
+//           roughness: 0.45,
+//           metalness: 0,
+//         })
+//         return
+//       }
+
+//       child.material = child.userData.originalMaterial.clone()
+//     })
+//   }, [scene, activeCandy]) // ✅ yahi tha, intact rakho
+
+//   // animations — same as before
+//   useEffect(() => {
+//     if (!names.length) return
+//     names.forEach((name) => {
+//       const action = actions[name]
+//       if (!action) return
+//       action.reset()
+//       action.timeScale = 5
+//       action.setLoop(2200, 1)
+//       action.clampWhenFinished = true
+//       action.play()
+//     })
+//   }, [actions, names, glb])
+
+//   // ✅ Center wraps, position sirf Y offset
+//   return (
+//      <Center bottom position={[0, 2.2, 0]}>
+//       <primitive
+//         ref={group}
+//         object={scene}
+//         scale={0.15}
+        
+//       />
+//     </Center>
+//   )
+// }
+
+
+
+
+
+const SCALE = 0.15
+
 function CandyModel({ glb, activeCandy }) {
   const group = useRef()
   const { scene, animations } = useGLTF(glb)
   const { actions, names } = useAnimations(animations, group)
 
-  // ✅ SIRF materials — bounding box gone
+  const sceneOffset = useMemo(() => {
+    // ✅ position AUR scale dono reset — cached scene clean slate
+    scene.position.set(0, 0, 0)
+    scene.scale.set(1, 1, 1)      // ← YAHI missing tha
+    scene.updateWorldMatrix(true, true)
+
+    const box = new THREE.Box3().setFromObject(scene)
+    const center = new THREE.Vector3()
+    const size = new THREE.Vector3()
+    box.getCenter(center)
+    box.getSize(size)
+
+    // scale=1 pe compute karo, phir SCALE se multiply karo
+    return new THREE.Vector3(
+      -center.x * SCALE,
+      (-center.y + size.y / 2) * SCALE,
+      -center.z * SCALE
+    )
+  }, [scene])
+
   useEffect(() => {
     scene.traverse((child) => {
       if (!child.isMesh) return
-
       const n = child.name.toLowerCase()
-
       if (!child.userData.originalMaterial) {
         child.userData.originalMaterial = child.material.clone()
       }
-
       if (n.includes('jar') || n.includes('glass') || n.includes('container')) {
         child.material = new THREE.MeshPhysicalMaterial({
-          color: '#e8eff5',
-          roughness: 0.08,
-          transparent: true,
-          opacity: 0.22,
-          side: THREE.DoubleSide,
+          color: '#e8eff5', roughness: 0.08, transparent: true,
+          opacity: 0.22, side: THREE.DoubleSide,
         })
         return
       }
-
       if (activeCandy?.id === 'toffees') {
         child.material = new THREE.MeshStandardMaterial({
-          color: '#b86b3d',
-          roughness: 0.45,
-          metalness: 0,
+          color: '#b86b3d', roughness: 0.45, metalness: 0,
         })
         return
       }
-
       child.material = child.userData.originalMaterial.clone()
     })
-  }, [scene, activeCandy]) // ✅ yahi tha, intact rakho
+  }, [scene, activeCandy])
 
-  // animations — same as before
   useEffect(() => {
     if (!names.length) return
     names.forEach((name) => {
@@ -172,16 +254,10 @@ function CandyModel({ glb, activeCandy }) {
     })
   }, [actions, names, glb])
 
-  // ✅ Center wraps, position sirf Y offset
   return (
-     <Center bottom position={[0, 2.2, 0]}>
-      <primitive
-        ref={group}
-        object={scene}
-        scale={0.15}
-        
-      />
-    </Center>
+    <group position={[sceneOffset.x, sceneOffset.y - 1.0, sceneOffset.z]}>
+      <primitive ref={group} object={scene} scale={SCALE} />
+    </group>
   )
 }
 function SpinnerFallback() {
@@ -231,7 +307,7 @@ function CartScene({ glb, modelKey, activeCandy }) {
       <Awning3D />
 
       {/* Tera model — Float ke andar */}
-      <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.15}>
+      {/* <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.15}>
         <group position={[0, 0.3, 0]} scale={1.1}>
           <Suspense fallback={<SpinnerFallback />}>
         <CandyModel
@@ -241,7 +317,14 @@ function CartScene({ glb, modelKey, activeCandy }) {
 />
           </Suspense>
         </group>
-      </Float>
+      </Float> */}
+
+
+      <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.15}>
+  <Suspense fallback={<SpinnerFallback />}>
+    <CandyModel key={modelKey} glb={glb} activeCandy={activeCandy} />
+  </Suspense>
+</Float>
 
       <ContactShadows
         position={[0, -1.18, 0]}
