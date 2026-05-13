@@ -5,7 +5,7 @@ import { Canvas } from '@react-three/fiber'
 import { useGLTF, OrbitControls, Environment, useAnimations } from '@react-three/drei'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
-import { Float, ContactShadows } from '@react-three/drei'
+import { Float, ContactShadows,Center } from '@react-three/drei'
 // ── candy options ─────────────────────────────────────────────────
 const CANDIES = [
   {
@@ -37,88 +37,153 @@ const SIZES = [
 ]
 
 // ── 3D model ─────────────────────────────────────────────────────
-function CandyModel({ glb,activeCandy }) {
+// function CandyModel({ glb,activeCandy }) {
+//   const group = useRef()
+//   const { scene, animations } = useGLTF(glb)
+//   const { actions, names } = useAnimations(animations, group)
+
+//   useEffect(() => {
+//     // Auto-center the model using bounding box
+//     const box = new THREE.Box3().setFromObject(scene)
+//     const center = new THREE.Vector3()
+//     const size = new THREE.Vector3()
+//     box.getCenter(center)
+//     box.getSize(size)
+
+//     // Shift model so its center is at origin
+//     scene.position.set(-center.x, -center.y, -center.z)
+
+//    scene.traverse((child) => {
+//   if (!child.isMesh) return
+
+//   const n = child.name.toLowerCase()
+
+//   // SAVE ORIGINAL MATERIAL ONCE
+//   if (!child.userData.originalMaterial) {
+//     child.userData.originalMaterial = child.material.clone()
+//   }
+
+//   // JAR
+//   if (
+//     n.includes('jar') ||
+//     n.includes('glass') ||
+//     n.includes('container')
+//   ) {
+//     child.material = new THREE.MeshPhysicalMaterial({
+//       color: '#e8eff5',
+//       roughness: 0.08,
+//       transparent: true,
+//       opacity: 0.22,
+//       side: THREE.DoubleSide,
+//     })
+
+//     return
+//   }
+
+//   // TOFFEES
+//   if (activeCandy?.id === 'toffees') {
+//     child.material = new THREE.MeshStandardMaterial({
+//       color: '#b86b3d',
+//       roughness: 0.45,
+//       metalness: 0,
+//     })
+
+//     return
+//   }
+
+//   // RESTORE ORIGINAL SKITTLES MATERIAL
+//   child.material = child.userData.originalMaterial.clone()
+// })
+//  }, [scene, activeCandy])
+
+//   useEffect(() => {
+//     if (!names.length) return
+//     names.forEach((name) => {
+//       const action = actions[name]
+//       if (!action) return
+//       action.reset()
+//         action.timeScale = 5 
+//       action.setLoop(2200, 1)
+//       action.clampWhenFinished = true
+//       action.play()
+//     })
+//   }, [actions, names, glb])
+
+//   return (
+//     <primitive
+//       ref={group}
+//       object={scene}
+//       scale={0.15}
+//       position={[0, -1.1, 0]}
+//     />
+//   )
+// }
+function CandyModel({ glb, activeCandy }) {
   const group = useRef()
   const { scene, animations } = useGLTF(glb)
   const { actions, names } = useAnimations(animations, group)
 
+  // ✅ SIRF materials — bounding box gone
   useEffect(() => {
-    // Auto-center the model using bounding box
-    const box = new THREE.Box3().setFromObject(scene)
-    const center = new THREE.Vector3()
-    const size = new THREE.Vector3()
-    box.getCenter(center)
-    box.getSize(size)
+    scene.traverse((child) => {
+      if (!child.isMesh) return
 
-    // Shift model so its center is at origin
-    scene.position.set(-center.x, -center.y, -center.z)
+      const n = child.name.toLowerCase()
 
-   scene.traverse((child) => {
-  if (!child.isMesh) return
+      if (!child.userData.originalMaterial) {
+        child.userData.originalMaterial = child.material.clone()
+      }
 
-  const n = child.name.toLowerCase()
+      if (n.includes('jar') || n.includes('glass') || n.includes('container')) {
+        child.material = new THREE.MeshPhysicalMaterial({
+          color: '#e8eff5',
+          roughness: 0.08,
+          transparent: true,
+          opacity: 0.22,
+          side: THREE.DoubleSide,
+        })
+        return
+      }
 
-  // SAVE ORIGINAL MATERIAL ONCE
-  if (!child.userData.originalMaterial) {
-    child.userData.originalMaterial = child.material.clone()
-  }
+      if (activeCandy?.id === 'toffees') {
+        child.material = new THREE.MeshStandardMaterial({
+          color: '#b86b3d',
+          roughness: 0.45,
+          metalness: 0,
+        })
+        return
+      }
 
-  // JAR
-  if (
-    n.includes('jar') ||
-    n.includes('glass') ||
-    n.includes('container')
-  ) {
-    child.material = new THREE.MeshPhysicalMaterial({
-      color: '#e8eff5',
-      roughness: 0.08,
-      transparent: true,
-      opacity: 0.22,
-      side: THREE.DoubleSide,
+      child.material = child.userData.originalMaterial.clone()
     })
+  }, [scene, activeCandy]) // ✅ yahi tha, intact rakho
 
-    return
-  }
-
-  // TOFFEES
-  if (activeCandy?.id === 'toffees') {
-    child.material = new THREE.MeshStandardMaterial({
-      color: '#b86b3d',
-      roughness: 0.45,
-      metalness: 0,
-    })
-
-    return
-  }
-
-  // RESTORE ORIGINAL SKITTLES MATERIAL
-  child.material = child.userData.originalMaterial.clone()
-})
- }, [scene, activeCandy])
-
+  // animations — same as before
   useEffect(() => {
     if (!names.length) return
     names.forEach((name) => {
       const action = actions[name]
       if (!action) return
       action.reset()
-        action.timeScale = 5 
+      action.timeScale = 5
       action.setLoop(2200, 1)
       action.clampWhenFinished = true
       action.play()
     })
   }, [actions, names, glb])
 
+  // ✅ Center wraps, position sirf Y offset
   return (
-    <primitive
-      ref={group}
-      object={scene}
-      scale={0.15}
-      position={[0, -1.1, 0]}
-    />
+    <Center>
+      <primitive
+        ref={group}
+        object={scene}
+        scale={0.15}
+        position={[0, -0.5, 0]}
+      />
+    </Center>
   )
 }
-
 function SpinnerFallback() {
   return (
     <mesh>
